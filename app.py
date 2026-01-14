@@ -1,19 +1,10 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request # Dodaj request tutaj
 
-app = Flask(__name__)
+# ... poprzedni kod od /ping ...
 
-# To jest główna strona - opcjonalna
-@app.route('/')
-def home():
-    return "Serwer PokéNet Działa!"
-
-# TO JEST TO, CZEGO SZUKA TWOJA APKA (kod 404 zamieni się w 200)
-@app.route('/ping')
-def ping():
-    return "pong", 200
-
-if __name__ == '__main__':
-    # Render wymaga, żeby serwer słuchał na porcie podanym w systemie
-    import os
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+@app.route('/login-log', methods=['POST'])
+def login_log():
+    data = request.json
+    username = data.get('user', 'Nieznany')
+    print(f"--- TRENER ZALOGOWANY: {username} ---")
+    return jsonify({"status": "received"}), 200
