@@ -1,30 +1,43 @@
-from flask import Flask, jsonify, request
+from fastapi import FastAPI
+from pydantic import BaseModel
+from typing import List
+import json
+import os
 
-# 1. NAJPIERW tworzymy obiekt aplikacji
-app = Flask(__name__)
+app = FastAPI()
+DB_FILE = "database.json"
 
-# 2. POTEM definiujemy trasy (routes)
-@app.route('/')
-def home():
-    return "Serwer PokéNet Działa!"
+# Model danych dla Newsów
+class NewsItem(BaseModel):
+    title: str
+    content: str
+    date: str
+    color: str
 
-@app.route('/ping', methods=['GET'])
-def ping():
-    return "pong", 200
+# Inicjalizacja prostej bazy danych w pliku
+def load_db():
+    if not os.path.exists(DB_FILE):
+        return {"news": []}
+    with open(DB_FILE, "r") as f:
+        return json.load(f)
 
-# Nowa trasa do odbierania logów z Twojej aplikacji C#
-@app.route('/login-log', methods=['POST'])
-def login_log():
-    try:
-        data = request.json
-        username = data.get('user', 'Nieznany')
-        print(f"--- TRENER ZALOGOWANY: {username} ---")
-        return jsonify({"status": "received", "message": f"Witaj {username}!"}), 200
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 400
+def save_db(data):
+    with open(DB_FILE, "w") as f:
+        json.dump(data, f)
 
-# 3. NA KOŃCU uruchamiamy serwer
-if __name__ == '__main__':
-    import os
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+@app.get("/news", response_model=List[NewsItem])
+async def get_news():
+    db = load_db()
+    return db["news"]
+
+@app.post("/add_news")
+async def add_news(item: NewsItem):
+    db = load_db()
+    db["news"].insert(0, item.dict()) # Dodaj na początek listy
+    save_db(db)
+    return {"message": "News added successfully!"}
+
+# Endpoint testowy, żebyś widział czy serwer żyje
+@app.get("/")
+async def root():
+    return {"status": "PokeNet API Online", "version": "0.1.0"}
