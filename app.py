@@ -39,7 +39,7 @@ async def add_news(item: NewsItem):
     now = datetime.now()
     timestamp = time.time()
     # Tworzymy ładny format daty: Dzień.Miesiąc.Rok Godzina:Minuta
-    readable_date = now.strftime("%d.%碰.%Y %H:%M") 
+    readable_date = now.strftime("%d.%m.%Y %H:%M") 
     
     new_entry = {
         "title": item.title,
