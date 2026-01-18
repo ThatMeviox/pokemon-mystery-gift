@@ -1,43 +1,41 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from typing import List
 import json
 import os
+from datetime import datetime
 
 app = FastAPI()
-DB_FILE = "database.json"
+NEWS_FILE = "news_data.json"
 
-# Model danych dla Newsów
 class NewsItem(BaseModel):
     title: str
     content: str
-    date: str
     color: str
 
-# Inicjalizacja prostej bazy danych w pliku
-def load_db():
-    if not os.path.exists(DB_FILE):
-        return {"news": []}
-    with open(DB_FILE, "r") as f:
-        return json.load(f)
+# Funkcja wczytująca newsy z pliku przy starcie
+def load_news():
+    if os.path.exists(NEWS_FILE):
+        with open(NEWS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
 
-def save_db(data):
-    with open(DB_FILE, "w") as f:
-        json.dump(data, f)
+# Funkcja zapisująca newsy do pliku
+def save_news(news_list):
+    with open(NEWS_FILE, "w", encoding="utf-8") as f:
+        json.dump(news_list, f, ensure_ascii=False, indent=4)
 
-@app.get("/news", response_model=List[NewsItem])
-async def get_news():
-    db = load_db()
-    return db["news"]
+news_db = load_news()
+
+@app.get("/news")
+def get_news():
+    return news_db
 
 @app.post("/add_news")
-async def add_news(item: NewsItem):
-    db = load_db()
-    db["news"].insert(0, item.dict()) # Dodaj na początek listy
-    save_db(db)
-    return {"message": "News added successfully!"}
-
-# Endpoint testowy, żebyś widział czy serwer żyje
-@app.get("/")
-async def root():
-    return {"status": "PokeNet API Online", "version": "0.1.0"}
+def add_news(item: NewsItem):
+    new_entry = item.dict()
+    # AUTOMATYCZNA DATA:
+    new_entry["date"] = datetime.now().strftime("%d.%m.%2026") 
+    
+    news_db.insert(0, new_entry) # Dodaj na początek listy
+    save_news(news_db) # Zapisz do pliku
+    return {"message": "News added successfully"}
